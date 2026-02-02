@@ -1,0 +1,31 @@
+package com.treinamento.controller;
+
+import com.treinamento.model.Feriado;
+import com.treinamento.repository.FeriadoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/feriados")
+public class FeriadoController {
+
+    @Autowired
+    private FeriadoRepository feriadoRepository;
+
+    @GetMapping
+    public List<Feriado> listar() {
+        return feriadoRepository.findAll();
+    }
+
+    @PostMapping
+    public Feriado salvar(@RequestBody Feriado feriado) {
+        return feriadoRepository.save(feriado);
+    }
+
+    @DeleteMapping("/{id}")
+    public void excluir(@PathVariable Long id) {
+        feriadoRepository.deleteById(id);
+    }
+}

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin-RH | Gestão de Feriados</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --plugin-primary: #6366f1;
+            --plugin-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --bg-glass: rgba(255, 255, 255, 0.8);
+        }
+
+        body { 
+            background: transparent;
+            color: var(--text-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0; padding: 0;
+            min-height: 100vh;
+        }
+
+        .meurh-container {
+            padding: 1rem;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .meurh-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            background: var(--plugin-gradient);
+            padding: 1.25rem 2rem;
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .meurh-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.5px;
+        }
+
+        .meurh-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 1.25rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding: 1.5rem;
+        }
+
+        .btn-plugin-primary {
+            background: var(--plugin-gradient);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-plugin-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+
+        .table th {
+            background: rgba(248, 250, 252, 0.8);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+        }
+        
+        .table td {
+            padding: 1.25rem 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .form-control {
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-color: rgba(0,0,0,0.1);
+            font-weight: 500;
+        }
+
+        .form-control:focus {
+            border-color: var(--plugin-primary);
+            box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="meurh-container">
+        <header class="meurh-header">
+            <div class="meurh-title">
+                <i class="fas fa-plug fa-lg"></i>
+                Plugin-RH <span class="mx-2" style="opacity: 0.5;">|</span> <small>Gestão de Feriados</small>
+            </div>
+        </header>
+
+        <div class="meurh-card">
+            <h5 class="fw-bold mb-4">Novo Feriado Municipal</h5>
+            <form id="formFeriado" class="row g-3 mb-5 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Descrição</label>
+                    <input type="text" id="f-desc" class="form-control" placeholder="Ex: Aniversário da Cidade" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Data</label>
+                    <input type="date" id="f-data" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-plugin-primary w-100" onclick="salvarFeriado()">
+                        <i class="fas fa-plus me-1"></i> Adicionar
+                    </button>
+                </div>
+            </form>
+
+            <h5 class="fw-bold mb-3">Feriados Cadastrados</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Data</th>
+                            <th class="text-center">Tipo</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-feriados">
+                        <!-- Carregado via API -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function carregarFeriados() {
+            try {
+                const resp = await fetch('/api/feriados');
+                const feriados = await resp.json();
+                
+                const tbody = document.getElementById('lista-feriados');
+                tbody.innerHTML = '';
+                
+                // Ordenar por data
+                feriados.sort((a,b) => a.data.localeCompare(b.data));
+
+                feriados.forEach(f => {
+                    const tr = document.createElement('tr');
+                    const dataFormatada = new Date(f.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                    tr.innerHTML = `
+                        <td class="fw-bold">${f.descricao}</td>
+                        <td>${dataFormatada}</td>
+                        <td class="text-center">
+                            <span class="badge ${f.tipo === 'N' ? 'bg-primary' : 'bg-info'}">
+                                ${f.tipo === 'N' ? 'Nacional' : 'Municipal'}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            ${f.tipo === 'M' ? `
+                                <button class="btn btn-sm btn-outline-danger border-0" onclick="excluirFeriado(${f.id})" title="Excluir">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            ` : '-'}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { console.error('Erro ao carregar feriados:', e); }
+        }
+
+        async function salvarFeriado() {
+            const desc = document.getElementById('f-desc').value;
+            const data = document.getElementById('f-data').value;
+            if (!desc || !data) return alert('Preencha descrição e data');
+
+            try {
+                const resp = await fetch('/api/feriados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descricao: desc, data: data, tipo: 'M' })
+                });
+                if (resp.ok) {
+                    document.getElementById('formFeriado').reset();
+                    carregarFeriados();
+                }
+            } catch (e) { console.error('Erro ao salvar:', e); }
+        }
+
+        async function excluirFeriado(id) {
+            if (!confirm('Deseja realmente excluir este feriado municipal?')) return;
+            try {
+                const resp = await fetch(`/api/feriados/${id}`, { method: 'DELETE' });
+                if (resp.ok) carregarFeriados();
+            } catch (e) { console.error('Erro ao excluir:', e); }
+        }
+
+        window.onload = carregarFeriados;
+    </script>
+</body>
+</html>
