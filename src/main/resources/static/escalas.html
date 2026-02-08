@@ -181,6 +181,24 @@
                             </div>
                         </div>
 
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Cerca Virtual</label>
+                                <select id="e-cerca" class="form-select border-light-subtle" onchange="toggleCerca()">
+                                    <option value="false">NÃO</option>
+                                    <option value="true">SIM</option>
+                                </select>
+                            </div>
+                            <div id="div-raio" class="col-md-8" style="display: none;">
+                                <label class="form-label small fw-bold text-muted">Raio de Alcance (metros) - Máx 1000m</label>
+                                <div class="input-group">
+                                    <input type="number" id="e-raio" class="form-control" placeholder="500" min="1" max="1000">
+                                    <span class="input-group-text">metros</span>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.65rem;">O ponto será registrado como "Pendente de Aprovação" se fora deste raio.</small>
+                            </div>
+                        </div>
+
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted">Segunda-feira</label>
@@ -372,9 +390,15 @@
             } catch (e) { console.error(e); }
         }
 
+        function toggleCerca() {
+            const cerca = document.getElementById('e-cerca').value === 'true';
+            document.getElementById('div-raio').style.display = cerca ? 'block' : 'none';
+        }
+
         function abrirModal() {
             document.getElementById('formEscala').reset();
             document.getElementById('e-id').value = '';
+            toggleCerca();
             if (!modal) modal = new bootstrap.Modal(document.getElementById('modalEscala'));
             modal.show();
         }
@@ -400,6 +424,10 @@
             document.getElementById('e-sex-extra').value = e.sexExtra || '';
             document.getElementById('e-sab-extra').value = e.sabExtra || '';
             document.getElementById('e-dom-extra').value = e.domExtra || '';
+
+            document.getElementById('e-cerca').value = e.cercaVirtual ? 'true' : 'false';
+            document.getElementById('e-raio').value = e.raioCerca || '';
+            toggleCerca();
         }
 
         async function salvar() {
@@ -422,8 +450,16 @@
                 quiExtra: document.getElementById('e-qui-extra').value,
                 sexExtra: document.getElementById('e-sex-extra').value,
                 sabExtra: document.getElementById('e-sab-extra').value,
-                domExtra: document.getElementById('e-dom-extra').value
+                domExtra: document.getElementById('e-dom-extra').value,
+
+                cercaVirtual: document.getElementById('e-cerca').value === 'true',
+                raioCerca: document.getElementById('e-raio').value ? parseInt(document.getElementById('e-raio').value) : null
             };
+
+            if (dados.cercaVirtual && dados.raioCerca > 1000) {
+                alert('O raio máximo permitido é de 1000 metros.');
+                return;
+            }
 
             if (!dados.filial || !dados.codigo || !dados.idHorario) {
                 alert('Preencha os campos obrigatórios.');

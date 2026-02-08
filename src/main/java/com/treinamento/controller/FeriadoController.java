@@ -15,12 +15,18 @@ public class FeriadoController {
     private FeriadoRepository feriadoRepository;
 
     @GetMapping
-    public List<Feriado> listar() {
+    public List<Feriado> listar(@RequestParam(required = false) Integer ano) {
+        if (ano != null) {
+            return feriadoRepository.findByAnoOrderByData(ano);
+        }
         return feriadoRepository.findAll();
     }
 
     @PostMapping
     public Feriado salvar(@RequestBody Feriado feriado) {
+        if (feriado.getData() != null) {
+            feriado.setAno(feriado.getData().getYear());
+        }
         return feriadoRepository.save(feriado);
     }
 

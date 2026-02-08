@@ -6,6 +6,8 @@
     <title>Plugin-RH | Espelho de Ponto</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -203,6 +205,9 @@
                 Plugin-RH <span class="mx-2" style="opacity: 0.5;">|</span> <small>Espelho de Ponto</small>
             </div>
             <div class="d-flex gap-3">
+                <button id="btnBaterPonto" class="btn-plugin btn-plugin-white" type="button">
+                    <i class="fas fa-hand-pointer"></i> Bater Ponto
+                </button>
                 <button id="btn-trocar-funcionario" class="btn-plugin btn-plugin-white" style="display:none;" onclick="abrirModalSelecao()">
                     <i class="fas fa-users-viewfinder"></i> Selecionar Funcionário
                 </button>
@@ -261,6 +266,7 @@
                         <th>Saída 1</th>
                         <th>Entrada 2</th>
                         <th>Saída 2</th>
+                        <th style="width: 40px;"><i class="fas fa-location-dot"></i></th>
                         <th style="width: 100px;">Origem</th>
                         <th>Abono</th>
                     </tr>
@@ -271,6 +277,38 @@
             </table>
         </div>
     </div>
+
+
+    <!-- Modal Mapa e Confirmação de Ponto -->
+    <div class="modal fade" id="modalMapaPonto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom py-2 px-3">
+                    <h6 class="modal-title fw-bold text-dark"><i class="fas fa-map-location-dot me-2 text-primary"></i>Confirmar Localização</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="mapa-ponto" style="height: 250px; width: 100%;"></div>
+                    <div class="p-3 bg-light">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas fa-location-dot text-danger me-2" style="font-size: 0.8rem;"></i>
+                            <span class="fw-bold" style="font-size: 0.7rem; color: #64748b;">ENDEREÇO IDENTIFICADO:</span>
+                        </div>
+                        <div id="endereco-identificado" class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.2;">Buscando endereço...</div>
+                        <input type="hidden" id="lat-ponto">
+                        <input type="hidden" id="lng-ponto">
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top p-2">
+                    <button type="button" class="btn btn-sm btn-link text-muted fw-bold text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmarPonto" class="btn-plugin btn-plugin-primary px-3 py-2" style="font-size: 0.85rem;">
+                        <i class="fas fa-check me-2"></i>Confirmar Batida
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Modal Seleção de Funcionário -->
     <div class="modal fade" id="modalSelecao" tabindex="-1">
@@ -492,6 +530,116 @@
     </div>
 
     <script>
+        let map;
+        let marker;
+        const modalMapaPonto = new bootstrap.Modal(document.getElementById('modalMapaPonto'));
+
+        document.getElementById('btnBaterPonto').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => abrirMapaPonto(position.coords.latitude, position.coords.longitude),
+                    (error) => {
+                        console.error('Erro ao obter localização:', error);
+                        alert('Não foi possível obter sua localização. O ponto será registrado sem coordenadas.');
+                        registrarPonto(null, null, null);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                alert('Geolocalização não suportada pelo navegador.');
+                registrarPonto(null, null, null);
+            }
+        });
+
+        async function abrirMapaPonto(lat, lng) {
+            document.getElementById('lat-ponto').value = lat;
+            document.getElementById('lng-ponto').value = lng;
+            document.getElementById('endereco-identificado').innerText = 'Buscando endereço...';
+            
+            modalMapaPonto.show();
+
+            // Inicializa o mapa Leaflet
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('mapa-ponto').setView([lat, lng], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+                    marker = L.marker([lat, lng]).addTo(map);
+                } else {
+                    map.setView([lat, lng], 16);
+                    marker.setLatLng([lat, lng]);
+                    map.invalidateSize();
+                }
+            }, 500);
+
+            // Busca o endereço (Reverse Geocoding)
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                const endereco = data.display_name || 'Endereço não encontrado';
+                document.getElementById('endereco-identificado').innerText = endereco;
+            } catch (err) {
+                console.error('Erro ao buscar endereço:', err);
+                document.getElementById('endereco-identificado').innerText = 'Erro ao identificar endereço. Coordenadas serão salvas.';
+            }
+        }
+
+        document.getElementById('btnConfirmarPonto').addEventListener('click', function() {
+            const lat = document.getElementById('lat-ponto').value;
+            const lng = document.getElementById('lng-ponto').value;
+            const endereco = document.getElementById('endereco-identificado').innerText;
+            
+            modalMapaPonto.hide();
+            registrarPonto(lat, lng, endereco);
+        });
+
+        async function registrarPonto(lat, lng, endereco) {
+            try {
+                // Feedback visual de carregamento
+                const btn = document.getElementById('btnConfirmarPonto');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Registrando...';
+
+                const response = await fetch('/api/marcacoes/bater-ponto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: lat, longitude: lng, endereco: endereco })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Em vez de alert apenas, vamos mostrar uma mensagem de sucesso bonita
+                    document.body.insertAdjacentHTML('beforeend', `
+                        <div id="sucesso-ponto" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 300px;">
+                            <div class="alert alert-success shadow-lg border-0 d-flex align-items-center p-4" style="border-radius: 1rem; background: #10b981; color: white;">
+                                <i class="fas fa-check-circle fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">${data.message}</h6>
+                                    <p class="small mb-0 opacity-75">Horário registrado: <strong>${data.hora}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2500);
+                } else {
+                    const error = await response.text();
+                    alert('Erro ao registrar ponto: ' + error);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro na conexão com o servidor.');
+                document.getElementById('btnConfirmarPonto').disabled = false;
+            }
+        }
+
         let feriadosCadastrados = [];
         let abonosCadastrados = [];
         let escalaFuncionario = null;
@@ -863,6 +1011,28 @@
                 }
             }
 
+            // Tentar capturar localização para marcação manual também
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        dados.latitude = position.coords.latitude;
+                        dados.longitude = position.coords.longitude;
+                        enviarDadosManual(dados);
+                    },
+                    (error) => {
+                        console.warn('Localização não capturada para manual:', error);
+                        enviarDadosManual(dados);
+                    },
+                    { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
+                );
+            } else {
+                enviarDadosManual(dados);
+            }
+        }
+
+        async function enviarDadosManual(dados) {
+            const matricula = dados.matricula;
+            const data = dados.data;
             try {
                 if (acaoAtual === 'excluir') {
                     if (confirm(`Tem certeza que deseja excluir a marcação da matrícula ${matricula} no dia ${data}?`)) {
@@ -894,11 +1064,24 @@
 
                 const resData = await response.json();
                 if (response.ok) {
-                    if (resData.status === 'EM_APROVACAO') {
-                        alert(resData.message);
-                    }
+                    const msg = resData.message || 'Operação realizada com sucesso!';
+                    
+                    // Feedback visual moderno para manual
+                    document.body.insertAdjacentHTML('beforeend', `
+                        <div id="sucesso-manual" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;">
+                            <div class="alert alert-primary shadow-lg border-0 d-flex align-items-center p-3" style="border-radius: 0.75rem; background: #6366f1; color: white;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <span class="small fw-bold">${msg}</span>
+                            </div>
+                        </div>
+                    `);
+
                     modalManual.hide();
-                    carregarMarcacoes();
+                    setTimeout(() => {
+                        const el = document.getElementById('sucesso-manual');
+                        if (el) el.remove();
+                        carregarMarcacoes();
+                    }, 2000);
                 } else {
                     alert('Erro ao salvar marcação: ' + (resData.message || 'Erro desconhecido'));
                 }
@@ -1097,6 +1280,13 @@
                         <td class="text-primary fw-bold">${displayS1}</td>
                         <td class="text-primary fw-bold">${displayE2}</td>
                         <td class="text-primary fw-bold">${displayS2}</td>
+                        <td>
+                            ${marcacao && marcacao.latitude ? `
+                                <a href="https://www.google.com/maps?q=${marcacao.latitude},${marcacao.longitude}" target="_blank" class="text-decoration-none text-primary" title="${marcacao.endereco || 'Ver localização'}">
+                                    <i class="fas fa-location-dot" style="font-size: 1.1rem;"></i>
+                                </a>
+                            ` : '-'}
+                        </td>
                         <td class="text-center">
                             ${origemBadge}
                         </td>

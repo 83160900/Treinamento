@@ -20,14 +20,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String cpf) throws UsernameNotFoundException {
-        System.out.println("[DEBUG_LOG] Loading user by CPF: " + cpf);
+        System.out.println("[DEBUG_LOG] Loading user by CPF: [" + cpf + "]");
         Funcionario funcionario = funcionarioRepository.findByCpf(cpf)
                 .orElseThrow(() -> {
-                    System.out.println("[DEBUG_LOG] User not found: " + cpf);
+                    System.err.println("[DEBUG_LOG] ERROR: User not found in database for CPF: [" + cpf + "]");
                     return new UsernameNotFoundException("Usuário não encontrado com CPF: " + cpf);
                 });
 
-        System.out.println("[DEBUG_LOG] User found: " + funcionario.getNome() + " password: " + (funcionario.getSenha() != null ? "EXISTS" : "NULL"));
+        System.out.println("[DEBUG_LOG] User found: " + funcionario.getNome() + " | Perfil: " + funcionario.getPerfil() + " | Hash senha: " + (funcionario.getSenha() != null ? funcionario.getSenha().substring(0, 10) + "..." : "NULL"));
         return new User(
                 funcionario.getCpf(),
                 funcionario.getSenha(),

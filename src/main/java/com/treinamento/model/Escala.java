@@ -1,9 +1,13 @@
 package com.treinamento.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 @Entity
 @Table(name = "escalas")
+@Filter(name = "tenantFilter", condition = "filial = :tenantId")
 public class Escala {
 
     @Id
@@ -60,6 +64,9 @@ public class Escala {
     @Column(length = 10)
     private String domExtra;
 
+    private boolean cercaVirtual = false;
+    private Integer raioCerca;
+
     public Escala() {}
 
     public Escala(String filial, String codigo, Long idHorario, String segunda, String terca, String quarta, String quinta, String sexta, String sabado, String domingo) {
@@ -112,4 +119,10 @@ public class Escala {
     public void setSabExtra(String sabExtra) { this.sabExtra = sabExtra; }
     public String getDomExtra() { return domExtra; }
     public void setDomExtra(String domExtra) { this.domExtra = domExtra; }
+
+    public boolean isCercaVirtual() { return cercaVirtual; }
+    public void setCercaVirtual(boolean cercaVirtual) { this.cercaVirtual = cercaVirtual; }
+
+    public Integer getRaioCerca() { return raioCerca; }
+    public void setRaioCerca(Integer raioCerca) { this.raioCerca = raioCerca; }
 }

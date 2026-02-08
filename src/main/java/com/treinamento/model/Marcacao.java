@@ -1,10 +1,14 @@
 package com.treinamento.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "marcacoes")
+@Filter(name = "tenantFilter", condition = "filial = :tenantId")
 public class Marcacao {
 
     @Id
@@ -45,6 +49,12 @@ public class Marcacao {
     private String justificativa;
 
     private String anexoNome;
+    
+    private Double latitude;
+    private Double longitude;
+    
+    @Column(columnDefinition = "TEXT")
+    private String endereco;
 
     // Construtores
     public Marcacao() {}
@@ -102,4 +112,13 @@ public class Marcacao {
 
     public String getAnexoNome() { return anexoNome; }
     public void setAnexoNome(String anexoNome) { this.anexoNome = anexoNome; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getEndereco() { return endereco; }
+    public void setEndereco(String endereco) { this.endereco = endereco; }
 }

@@ -1,36 +1,16 @@
-# Plugin-RH Mobile
+# mobile_rh
 
-Esta é a versão mobile do sistema Plugin-RH, desenvolvida em Flutter.
+A new Flutter project.
 
-## Pré-requisitos
+## Getting Started
 
-- Flutter SDK (>= 3.0.0)
-- Android Studio / VS Code com extensões Flutter/Dart
-- Backend Spring Boot em execução
+This project is a starting point for a Flutter application.
 
-## Configuração
+A few resources to get you started if this is your first Flutter project:
 
-1. Entre na pasta `mobile/`:
-   ```bash
-   cd mobile
-   ```
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-2. Obtenha as dependências:
-   ```bash
-   flutter pub get
-   ```
-
-3. Configure o endereço do servidor no arquivo `lib/services/auth_service.dart`:
-   - Por padrão está `http://10.0.2.2:8080` (acesso ao localhost no emulador Android).
-
-4. Execute o aplicativo:
-   ```bash
-   flutter run
-   ```
-
-## Funcionalidades Implementadas
-
-- [x] Autenticação (Login/Logout) baseada em sessão.
-- [x] Dashboard dinâmico por perfil (Colaborador/Gestor/Admin).
-- [x] Estrutura para registro de marcações.
-- [x] Persistência de sessão (SharedPreferences).
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.

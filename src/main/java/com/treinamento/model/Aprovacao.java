@@ -1,11 +1,15 @@
 package com.treinamento.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "aprovacoes")
+@Filter(name = "tenantFilter", condition = "filial = :tenantId")
 public class Aprovacao {
 
     @Id
@@ -32,6 +36,9 @@ public class Aprovacao {
     private String status; // PENDENTE, EM_EFETIVACAO, APROVADO, REJEITADO
     private String justificativa;
     private String anexoNome;
+    
+    private Double latitude;
+    private Double longitude;
     
     private String solicitanteCpf;
     private String aprovadorCpf;
@@ -87,6 +94,12 @@ public class Aprovacao {
     public void setJustificativa(String justificativa) { this.justificativa = justificativa; }
     public String getAnexoNome() { return anexoNome; }
     public void setAnexoNome(String anexoNome) { this.anexoNome = anexoNome; }
+    
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
     public String getSolicitanteCpf() { return solicitanteCpf; }
     public void setSolicitanteCpf(String solicitanteCpf) { this.solicitanteCpf = solicitanteCpf; }
     public String getAprovadorCpf() { return aprovadorCpf; }

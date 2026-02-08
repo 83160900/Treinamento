@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -39,6 +42,9 @@ public class MarcacaoController {
 
     @Autowired
     private com.treinamento.repository.FuncionarioRepository funcionarioRepository;
+
+    @Autowired
+    private com.treinamento.repository.EscalaRepository escalaRepository;
 
     @GetMapping("/feriados")
     public List<com.treinamento.model.Feriado> listarFeriados() {
@@ -80,12 +86,113 @@ public class MarcacaoController {
 
     @GetMapping("/periodo")
     public ResponseEntity<Periodo> getPeriodoAtivo(@RequestParam(required = false) String filial) {
-        Optional<Periodo> p = periodoRepository.findByFilialAndAtivoTrue(filial);
-        if (p.isEmpty()) {
-            p = periodoRepository.findByAtivoTrue();
-        }
+        // Para garantir que o período apareça, buscamos sem o filtro de tenant
+        // pois o período pode ser "Geral" (filial vazia)
+        List<Periodo> periodos = periodoRepository.findAll();
+        
+        Optional<Periodo> p = periodos.stream()
+                .filter(Periodo::isAtivo)
+                .filter(x -> filial == null || filial.isEmpty() || filial.equals(x.getFilial()) || x.getFilial() == null || x.getFilial().isEmpty())
+                .findFirst();
+
         return p.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/bater-ponto")
+    public ResponseEntity<?> baterPonto(@RequestBody Map<String, Object> payload) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String cpfLogado = auth.getName();
+        
+        Optional<com.treinamento.model.Funcionario> logadoOpt = funcionarioRepository.findByCpf(cpfLogado);
+        if (logadoOpt.isEmpty()) {
+            return ResponseEntity.status(401).body("Usuário não encontrado.");
+        }
+        com.treinamento.model.Funcionario func = logadoOpt.get();
+        
+        LocalDate hoje = LocalDate.now();
+        String horaAtual = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+        
+        Double latitude = payload.get("latitude") != null ? Double.valueOf(payload.get("latitude").toString()) : null;
+        Double longitude = payload.get("longitude") != null ? Double.valueOf(payload.get("longitude").toString()) : null;
+        String endereco = payload.get("endereco") != null ? payload.get("endereco").toString() : null;
+
+        // --- Lógica de Cerca Virtual ---
+        boolean foraDoRaio = false;
+        // A regra de cerca virtual só se aplica para COLABORADOR. GESTOR e ADMIN não se aplica.
+        if ("COLABORADOR".equals(func.getPerfil()) && func.getIdEscala() != null) {
+            Optional<com.treinamento.model.Escala> escalaOpt = escalaRepository.findById(func.getIdEscala());
+            if (escalaOpt.isPresent() && escalaOpt.get().isCercaVirtual()) {
+                com.treinamento.model.Escala escala = escalaOpt.get();
+                Optional<com.treinamento.model.Filial> filialOpt = filialRepository.findById(func.getFilial());
+                if (filialOpt.isPresent()) {
+                    com.treinamento.model.Filial filial = filialOpt.get();
+                    if (filial.getLatitude() != null && filial.getLongitude() != null && latitude != null && longitude != null) {
+                        double distancia = calcularDistancia(latitude, longitude, filial.getLatitude(), filial.getLongitude());
+                        if (distancia > (escala.getRaioCerca() != null ? escala.getRaioCerca() : 1000)) {
+                            foraDoRaio = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (foraDoRaio) {
+            com.treinamento.model.Aprovacao aprov = new com.treinamento.model.Aprovacao();
+            aprov.setFilial(func.getFilial());
+            aprov.setMatricula(func.getMatricula());
+            aprov.setNomeFuncionario(func.getNome());
+            aprov.setDataMarcacao(hoje);
+            aprov.setTipo("PONTO_FORA_RAIO");
+            aprov.setSolicitanteCpf(cpfLogado);
+            if (latitude != null) aprov.setLatitude(latitude);
+            if (longitude != null) aprov.setLongitude(longitude);
+            aprov.addHistorico("Ponto registrado fora do raio permitido da cerca virtual.");
+            
+            // Determina qual batida está sendo feita para salvar na aprovação
+            Marcacao temp = marcacaoRepository.findByMatriculaAndData(func.getMatricula(), hoje).orElse(new Marcacao());
+            if (temp.getE1() == null) aprov.setE1(horaAtual);
+            else if (temp.getS1() == null) aprov.setS1(horaAtual);
+            else if (temp.getE2() == null) aprov.setE2(horaAtual);
+            else if (temp.getS2() == null) aprov.setS2(horaAtual);
+
+            aprovacaoRepository.save(aprov);
+
+            return ResponseEntity.ok(Map.of(
+                "message", "Atenção: Você está fora do raio permitido. Sua marcação foi registrada mas enviada para aprovação do gestor.",
+                "hora", horaAtual,
+                "status", "FORA_DO_RAIO"
+            ));
+        }
+        // --- Fim Lógica de Cerca Virtual ---
+
+        Marcacao marcacao = marcacaoRepository.findByMatriculaAndData(func.getMatricula(), hoje)
+                .orElse(new Marcacao(func.getFilial(), func.getMatricula(), hoje, null, null, null, null, "P")); // 'P' para Ponto/Mobile/Botão
+
+        if (marcacao.getE1() == null) {
+            marcacao.setE1(horaAtual);
+        } else if (marcacao.getS1() == null) {
+            marcacao.setS1(horaAtual);
+        } else if (marcacao.getE2() == null) {
+            marcacao.setE2(horaAtual);
+        } else if (marcacao.getS2() == null) {
+            marcacao.setS2(horaAtual);
+        } else {
+            return ResponseEntity.status(400).body("Limite de marcações diárias atingido.");
+        }
+
+        marcacao.setLatitude(latitude);
+        marcacao.setLongitude(longitude);
+        marcacao.setEndereco(endereco);
+        marcacao.setOrigem("P"); // P de Ponto via botão
+
+        marcacaoRepository.save(marcacao);
+        
+        return ResponseEntity.ok(Map.of(
+            "message", "Ponto registrado com sucesso!",
+            "hora", horaAtual,
+            "marcacao", marcacao
+        ));
     }
 
     @PostMapping
@@ -168,6 +275,9 @@ public class MarcacaoController {
             // Se for manual, garante que a origem seja 'M'
             if ("M".equals(novaMarcacao.getOrigem())) {
                 existente.setOrigem("M");
+                if (novaMarcacao.getLatitude() != null) existente.setLatitude(novaMarcacao.getLatitude());
+                if (novaMarcacao.getLongitude() != null) existente.setLongitude(novaMarcacao.getLongitude());
+                if (novaMarcacao.getEndereco() != null) existente.setEndereco(novaMarcacao.getEndereco());
             }
 
             // Atualiza campos de abono se enviados
@@ -345,5 +455,15 @@ public class MarcacaoController {
             marcacaoRepository.delete(existente.get());
         }
         return ResponseEntity.ok().body(Map.of("status", "SUCESSO", "message", "Marcação excluída com sucesso."));
+    }
+    private double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Raio da Terra em km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c * 1000; // Converte para metros
     }
 }

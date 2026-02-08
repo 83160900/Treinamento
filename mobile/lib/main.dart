@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
+
 import 'pages/login_page.dart';
 
 void main() {
-  runApp(const PluginRHApp());
+  runApp(const MyApp());
 }
 
-class PluginRHApp extends StatelessWidget {
-  const PluginRHApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Plugin-RH Mobile',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6366F1)),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
-        fontFamily: 'Plus Jakarta Sans',
       ),
       home: const LoginPage(),
     );

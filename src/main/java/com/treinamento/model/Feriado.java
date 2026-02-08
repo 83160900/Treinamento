@@ -17,7 +17,8 @@ public class Feriado {
     @Column(nullable = false)
     private LocalDate data;
 
-    private String tipo; // N para Nacional, M para Municipal
+    private String tipo;
+    private Integer ano; // N para Nacional, M para Municipal
 
     public Feriado() {}
 
@@ -36,4 +37,7 @@ public class Feriado {
     public void setData(LocalDate data) { this.data = data; }
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
+
+    public Integer getAno() { return ano; }
+    public void setAno(Integer ano) { this.ano = ano; }
 }

@@ -28,3 +28,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Build ###
+target/
+*.log
+uploads/
+nssm.exe
+test.txt

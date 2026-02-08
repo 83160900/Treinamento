@@ -1,10 +1,14 @@
 package com.treinamento.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "Periodo")
+@Filter(name = "tenantFilter", condition = "filial = :tenantId")
 public class Periodo {
 
     @Id

@@ -1,14 +1,19 @@
 package com.treinamento.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
 
 @Entity
 @Table(name = "Filial")
+@Filter(name = "tenantFilter", condition = "cod_empresa = :tenantId")
 public class Filial {
 
     @Id
     @Column(length = 3)
     private String codFilial;
+
+    @Column(name = "cod_empresa", length = 3, nullable = true)
+    private String codEmpresa;
 
     @Column(length = 50, nullable = false)
     private String nome;
@@ -28,21 +33,30 @@ public class Filial {
     @Column(length = 14)
     private String cnpj;
 
+    private Double latitude;
+    private Double longitude;
+
     public Filial() {}
 
-    public Filial(String codFilial, String nome, String logradouro, String num, String estado, String municipio, String cnpj) {
+    public Filial(String codFilial, String codEmpresa, String nome, String logradouro, String num, String estado, String municipio, String cnpj, Double latitude, Double longitude) {
         this.codFilial = codFilial;
+        this.codEmpresa = codEmpresa;
         this.nome = nome;
         this.logradouro = logradouro;
         this.num = num;
         this.estado = estado;
         this.municipio = municipio;
         this.cnpj = cnpj;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     // Getters e Setters
     public String getCodFilial() { return codFilial; }
     public void setCodFilial(String codFilial) { this.codFilial = codFilial; }
+
+    public String getCodEmpresa() { return codEmpresa; }
+    public void setCodEmpresa(String codEmpresa) { this.codEmpresa = codEmpresa; }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
@@ -61,4 +75,10 @@ public class Filial {
 
     public String getCnpj() { return cnpj; }
     public void setCnpj(String cnpj) { this.cnpj = cnpj; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }
