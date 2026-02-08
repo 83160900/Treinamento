@@ -1,4 +1,4 @@
-package com.treinamento;
+﻿package com.treinamento;
 
 import com.treinamento.model.Integracao;
 import com.treinamento.model.Periodo;
@@ -38,7 +38,7 @@ public class TreinamentoApplication {
             // 0. Cadastrar Filiais
             try {
                 if (filialRepository.count() == 0) {
-                    filialRepository.save(new com.treinamento.model.Filial("001", "001", "MATRIZ - SÃO PAULO", "AVENIDA PAULISTA", "1000", "SP", "SÃO PAULO", "12345678000199", null, null));
+                    filialRepository.save(new com.treinamento.model.Filial("001", "001", "MATRIZ - SÃƒO PAULO", "AVENIDA PAULISTA", "1000", "SP", "SÃƒO PAULO", "12345678000199", null, null));
                     filialRepository.save(new com.treinamento.model.Filial("002", "001", "FILIAL - RIO DE JANEIRO", "RUA DA ASSEMBLEIA", "10", "RJ", "RIO DE JANEIRO", "12345678000200", null, null));
                 } else {
                     // Atualiza filiais existentes que possam estar sem codEmpresa
@@ -50,13 +50,13 @@ public class TreinamentoApplication {
                     });
                 }
                 
-                // Agora que os dados estão migrados, podemos tornar codEmpresa obrigatório em futuras execuções se quisermos,
-                // mas para esta sessão o nullable=true permitiu a criação da coluna.
+                // Agora que os dados estÃ£o migrados, podemos tornar codEmpresa obrigatÃ³rio em futuras execuÃ§Ãµes se quisermos,
+                // mas para esta sessÃ£o o nullable=true permitiu a criaÃ§Ã£o da coluna.
             } catch (Exception e) {
                 System.err.println("[SISTEMA] Erro ao carregar/atualizar filiais: " + e.getMessage());
             }
 
-            // 0.0. Cadastrar Horários Iniciais
+            // 0.0. Cadastrar HorÃ¡rios Iniciais
             if (horarioRepository.count() == 0) {
                 horarioRepository.save(new com.treinamento.model.Horario("001", "ADMINISTRATIVO 08-18", "08:00", "12:00", "13:00", "18:00"));
                 horarioRepository.save(new com.treinamento.model.Horario("002", "ADMINISTRATIVO 09-19", "09:00", "13:00", "14:00", "19:00"));
@@ -92,17 +92,17 @@ public class TreinamentoApplication {
             // 0.0.3. Cadastrar Escalas Iniciais
             if (escalaRepository.count() == 0) {
                 if (h1 != null) {
-                    escalaRepository.save(new com.treinamento.model.Escala("001", "001", h1.getId(), "Útil", "Útil", "Útil", "Útil", "Útil", "Compensado", "DSR"));
+                    escalaRepository.save(new com.treinamento.model.Escala("001", "001", h1.getId(), "Ãštil", "Ãštil", "Ãštil", "Ãštil", "Ãštil", "Compensado", "DSR"));
                 }
                 if (h2 != null) {
-                    escalaRepository.save(new com.treinamento.model.Escala("002", "001", h2.getId(), "Útil", "Útil", "Útil", "Útil", "Útil", "Compensado", "DSR"));
+                    escalaRepository.save(new com.treinamento.model.Escala("002", "001", h2.getId(), "Ãštil", "Ãštil", "Ãštil", "Ãštil", "Ãštil", "Compensado", "DSR"));
                 }
             }
             
             com.treinamento.model.Escala e1 = escalaRepository.findAll().stream().filter(e -> "001".equals(e.getFilial()) && "001".equals(e.getCodigo())).findFirst().orElse(null);
             com.treinamento.model.Escala e2 = escalaRepository.findAll().stream().filter(e -> "002".equals(e.getFilial()) && "001".equals(e.getCodigo())).findFirst().orElse(null);
 
-            // 0. Cadastrar ou Atualizar Funcionário Padrão (Administrador)
+            // 0. Cadastrar ou Atualizar FuncionÃ¡rio PadrÃ£o (Administrador)
             com.treinamento.model.Funcionario admin = funcionarioRepository.findByCpf("000")
                     .orElseGet(() -> {
                         com.treinamento.model.Funcionario f = new com.treinamento.model.Funcionario();
@@ -115,7 +115,7 @@ public class TreinamentoApplication {
             if (h1 != null) admin.setIdHorario(h1.getId());
             if (e1 != null) admin.setIdEscala(e1.getId());
             admin.setNome("ADMINISTRADOR DO SISTEMA");
-            // Senha padrão solicitada: admin
+            // Senha padrÃ£o solicitada: admin
             String senhaCodificada = passwordEncoder.encode("admin");
             System.out.println("[DEBUG_LOG] Atualizando Admin. Senha plain: admin, Hash: " + senhaCodificada);
             admin.setSenha(senhaCodificada);
@@ -124,7 +124,7 @@ public class TreinamentoApplication {
             admin.setTrocarSenha(false);
             funcionarioRepository.save(admin);
 
-            // 0.1. Cadastrar ou Atualizar Funcionário Gestor
+            // 0.1. Cadastrar ou Atualizar FuncionÃ¡rio Gestor
             com.treinamento.model.Funcionario gestor = funcionarioRepository.findByCpf("12345678900")
                     .orElseGet(() -> {
                         com.treinamento.model.Funcionario f = new com.treinamento.model.Funcionario();
@@ -144,7 +144,7 @@ public class TreinamentoApplication {
             gestor.setTrocarSenha(true); // Solicitar nova senha no primeiro login
             funcionarioRepository.save(gestor);
 
-            // 0.2. Cadastrar ou Atualizar Funcionário de Teste (Usuário Adicional)
+            // 0.2. Cadastrar ou Atualizar FuncionÃ¡rio de Teste (UsuÃ¡rio Adicional)
             com.treinamento.model.Funcionario teste = funcionarioRepository.findByCpf("98765432100")
                     .orElseGet(() -> {
                         com.treinamento.model.Funcionario f = new com.treinamento.model.Funcionario();
@@ -157,7 +157,7 @@ public class TreinamentoApplication {
             if (h2 != null) teste.setIdHorario(h2.getId());
             if (e2 != null) teste.setIdEscala(e2.getId());
             teste.setNome("USUARIO DE TESTE");
-            // Senha padrão conforme a nova regra: 3 primeiros dígitos do CPF (987)
+            // Senha padrÃ£o conforme a nova regra: 3 primeiros dÃ­gitos do CPF (987)
             teste.setSenha(passwordEncoder.encode("987"));
             teste.setPerfil("COLABORADOR");
             teste.setDepartamento("VENDAS");
@@ -173,15 +173,15 @@ public class TreinamentoApplication {
                 feriadoRepository.save(new com.treinamento.model.Feriado("Tiradentes", java.time.LocalDate.of(2025, 4, 21), "N"));
                 feriadoRepository.save(new com.treinamento.model.Feriado("Dia do Trabalho", java.time.LocalDate.of(2025, 5, 1), "N"));
                 feriadoRepository.save(new com.treinamento.model.Feriado("Corpus Christi", java.time.LocalDate.of(2025, 6, 19), "N"));
-                feriadoRepository.save(new com.treinamento.model.Feriado("Independência", java.time.LocalDate.of(2025, 9, 7), "N"));
+                feriadoRepository.save(new com.treinamento.model.Feriado("IndependÃªncia", java.time.LocalDate.of(2025, 9, 7), "N"));
                 feriadoRepository.save(new com.treinamento.model.Feriado("Nossa Sra Aparecida", java.time.LocalDate.of(2025, 10, 12), "N"));
                 feriadoRepository.save(new com.treinamento.model.Feriado("Finados", java.time.LocalDate.of(2025, 11, 2), "N"));
-                feriadoRepository.save(new com.treinamento.model.Feriado("Proclamação da República", java.time.LocalDate.of(2025, 11, 15), "N"));
-                feriadoRepository.save(new com.treinamento.model.Feriado("Consciência Negra", java.time.LocalDate.of(2025, 11, 20), "N"));
+                feriadoRepository.save(new com.treinamento.model.Feriado("ProclamaÃ§Ã£o da RepÃºblica", java.time.LocalDate.of(2025, 11, 15), "N"));
+                feriadoRepository.save(new com.treinamento.model.Feriado("ConsciÃªncia Negra", java.time.LocalDate.of(2025, 11, 20), "N"));
                 feriadoRepository.save(new com.treinamento.model.Feriado("Natal", java.time.LocalDate.of(2025, 12, 25), "N"));
             }
 
-            // 2. Cadastrar Período Aquisitivo
+            // 2. Cadastrar PerÃ­odo Aquisitivo
             java.time.LocalDate inicio = java.time.LocalDate.of(2025, 1, 20);
             java.time.LocalDate fim = java.time.LocalDate.of(2025, 2, 19);
             if (periodoRepository.count() == 0) {
@@ -193,32 +193,32 @@ public class TreinamentoApplication {
                 periodoRepository.save(p1);
             }
 
-            // 2. Mock de Integrações
+            // 2. Mock de IntegraÃ§Ãµes
             if (repository.count() == 0) {
                 Integracao i1 = new Integracao();
-                i1.setNome("Integração Node.js");
+                i1.setNome("IntegraÃ§Ã£o Node.js");
                 i1.setLinguagem("Node.js");
                 i1.setStatus("Pendente");
                 repository.save(i1);
             }
 
-            // 3. Carga Aleatória de Marcações (Sem horários britânicos)
+            // 3. Carga AleatÃ³ria de MarcaÃ§Ãµes (Sem horÃ¡rios britÃ¢nicos)
             if (marcacaoRepository.count() == 0) {
                 java.util.Random random = new java.util.Random();
                 
-                // Gerar marcações para o Admin (000001)
+                // Gerar marcaÃ§Ãµes para o Admin (000001)
                 gerarMarcacoesPara(admin.getFilial(), admin.getMatricula(), inicio, fim, marcacaoRepository, random);
                 
-                // Gerar marcações para o Gestor (000002)
+                // Gerar marcaÃ§Ãµes para o Gestor (000002)
                 gerarMarcacoesPara(gestor.getFilial(), gestor.getMatricula(), inicio, fim, marcacaoRepository, random);
                 
-                // Gerar marcações para o Teste (000003)
+                // Gerar marcaÃ§Ãµes para o Teste (000003)
                 gerarMarcacoesPara(teste.getFilial(), teste.getMatricula(), inicio, fim, marcacaoRepository, random);
                 
-                System.out.println("[SISTEMA] Carga de dados aleatórios concluída!");
+                System.out.println("[SISTEMA] Carga de dados aleatÃ³rios concluÃ­da!");
             }
             System.out.println("[SISTEMA] Admin CPF: 000 | Gestor CPF: 12345678900 | Teste CPF: 98765432100");
-            System.out.println("[SISTEMA] Regra de senha padrão: 3 primeiros dígitos do CPF");
+            System.out.println("[SISTEMA] Regra de senha padrÃ£o: 3 primeiros dÃ­gitos do CPF");
             System.out.println("[SISTEMA] Acesse: http://localhost:8080/index.html");
         };
     }
@@ -250,5 +250,4 @@ public class TreinamentoApplication {
         }
     }
 }
-/ /   B u i l d   t e s t  
- 
+// Teste de build BackEnd
