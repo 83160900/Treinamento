@@ -250,4 +250,4 @@ public class TreinamentoApplication {
         }
     }
 }
-// Teste de build BackEnd
+// Teste de deploy BackEnd - 02/08/2026 20:58:53
