@@ -1,4 +1,4 @@
-﻿package com.treinamento;
+package com.treinamento;
 
 import com.treinamento.model.Integracao;
 import com.treinamento.model.Periodo;
